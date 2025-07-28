@@ -292,12 +292,12 @@ const ChatWidget: React.FC = () => {
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
   <path
     strokeLinecap="round"
     strokeLinejoin="round"
     strokeWidth={2}
-    d="M3 10l9 4 9-4-9-4-9 4zm0 0v6a2 2 0 002 2h14a2 2 0 002-2v-6"
+    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
   />
 </svg>
 
