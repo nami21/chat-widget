@@ -1,6 +1,5 @@
 import React from 'react';
 import { MessageCircle, ExternalLink, Code, Globe, Eye, X } from 'lucide-react';
-import ChatWidget from './components/ChatWidget';
 
 function App() {
   return (
