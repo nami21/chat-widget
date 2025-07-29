@@ -39,7 +39,7 @@ function App() {
       description: 'Adapts based on URL parameters',
       icon: Globe,
       color: 'blue',
-      path: '/chat-widget.html'
+      path: '/widgets/dynamic-widget.html'
     }
   };
   
