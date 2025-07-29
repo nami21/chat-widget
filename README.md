@@ -1,12 +1,13 @@
 # Embeddable Chat Widget
 
-A modern, red-themed chat widget designed for easy embedding on any website. Features a clean interface with support for OpenAI Assistant integration and optional database storage.
+A modern, red-themed chat widget designed for easy embedding on any website. Features a clean interface with support for multiple OpenAI Assistants and optional database storage.
 
 ## 🚀 Features
 
 - **Modern Design**: Red-themed with rounded edges and smooth animations
 - **Embeddable**: Single HTML file that can be embedded anywhere via iframe
 - **Responsive**: Optimized for various screen sizes
+- **Multi-Assistant Support**: Configure different assistants for different use cases
 - **Self-Contained**: Uses Tailwind CSS via CDN, no build process required
 - **Backend Ready**: Includes integration points for OpenAI Assistant API
 - **Database Ready**: Optional database integration for conversation history
@@ -16,7 +17,11 @@ A modern, red-themed chat widget designed for easy embedding on any website. Fea
 ## 📁 Project Structure
 
 ```
-├── chat-widget.html          # Main embeddable chat widget (production ready)
+├── chat-widget.html          # Base embeddable chat widget template
+├── widgets/                  # Pre-configured widget variants
+│   ├── customer-support.html    # Customer support assistant
+│   ├── sales-assistant.html     # Sales assistant
+│   └── internal-hr.html         # Internal HR assistant
 ├── src/
 │   ├── App.tsx              # Demo page showing the widget
 │   ├── main.tsx             # React app entry point
@@ -53,6 +58,383 @@ A modern, red-themed chat widget designed for easy embedding on any website. Fea
 4. **Open your browser**
    - Demo page: `http://localhost:5173`
    - Chat widget directly: `http://localhost:5173/chat-widget.html`
+   - Specific assistants: `http://localhost:5173/widgets/customer-support.html`
+
+## 🤖 Multi-Assistant Configuration
+
+### Architecture Overview
+
+For multiple assistants, you have several approaches:
+
+#### Option 1: Separate Widget Files (Recommended for Different Branding)
+Create separate HTML files for each assistant with different configurations:
+
+```
+widgets/
+├── customer-support.html    # External customer support (Assistant ID: asst_xxx1)
+├── sales-assistant.html     # Sales team assistant (Assistant ID: asst_xxx2)
+├── internal-hr.html         # Internal HR assistant (Assistant ID: asst_xxx3)
+└── technical-support.html   # Technical support (Assistant ID: asst_xxx4)
+```
+
+#### Option 2: Dynamic Assistant Selection (Recommended for Same Branding)
+Use URL parameters or configuration to select the assistant dynamically:
+
+```html
+<!-- Embed with assistant parameter -->
+<iframe src="https://your-domain.com/chat-widget.html?assistant=customer-support"></iframe>
+<iframe src="https://your-domain.com/chat-widget.html?assistant=sales"></iframe>
+<iframe src="https://your-domain.com/chat-widget.html?assistant=hr"></iframe>
+```
+
+#### Option 3: Backend-Determined Assistant
+Let the backend determine which assistant to use based on:
+- Domain/referrer
+- User authentication
+- Page context
+- Time of day
+- User preferences
+
+### Implementation Examples
+
+#### Backend Configuration for Multiple Assistants
+
+```javascript
+// Assistant configuration
+const ASSISTANTS = {
+  'customer-support': {
+    id: 'asst_customer_support_123',
+    name: 'Customer Support',
+    welcomeMessage: '👋 Hello! How can I help you today?',
+    color: '#dc2626', // red-600
+    allowedDomains: ['yourcompany.com', 'support.yourcompany.com']
+  },
+  'sales': {
+    id: 'asst_sales_456',
+    name: 'Sales Assistant',
+    welcomeMessage: '💼 Hi! Ready to learn about our products?',
+    color: '#059669', // emerald-600
+    allowedDomains: ['yourcompany.com', 'sales.yourcompany.com']
+  },
+  'hr-internal': {
+    id: 'asst_hr_789',
+    name: 'HR Assistant',
+    welcomeMessage: '🏢 Hello team member! How can I assist you?',
+    color: '#7c3aed', // violet-600
+    allowedDomains: ['internal.yourcompany.com'],
+    requiresAuth: true
+  },
+  'technical-support': {
+    id: 'asst_tech_101',
+    name: 'Technical Support',
+    welcomeMessage: '🔧 Technical support here! What issue can I help resolve?',
+    color: '#ea580c', // orange-600
+    allowedDomains: ['support.yourcompany.com', 'docs.yourcompany.com']
+  }
+};
+
+// Updated backend endpoints
+app.post('/api/newThread', async (req, res) => {
+  try {
+    const { assistantType, domain } = req.body;
+    const assistant = ASSISTANTS[assistantType];
+    
+    if (!assistant) {
+      return res.status(400).json({
+        error: 'Invalid assistant type',
+        success: false
+      });
+    }
+    
+    // Check domain restrictions
+    if (assistant.allowedDomains && !assistant.allowedDomains.includes(domain)) {
+      return res.status(403).json({
+        error: 'Access denied for this domain',
+        success: false
+      });
+    }
+    
+    // Check authentication if required
+    if (assistant.requiresAuth && !req.user) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        success: false
+      });
+    }
+    
+    const thread = await openai.beta.threads.create();
+    
+    // Store thread with assistant info in database
+    await db.query(
+      'INSERT INTO conversations (thread_id, assistant_type, assistant_id, domain) VALUES ($1, $2, $3, $4)',
+      [thread.id, assistantType, assistant.id, domain]
+    );
+    
+    res.json({
+      threadId: thread.id,
+      assistantConfig: {
+        name: assistant.name,
+        welcomeMessage: assistant.welcomeMessage,
+        color: assistant.color
+      },
+      success: true
+    });
+  } catch (error) {
+    console.error('Error creating thread:', error);
+    res.status(500).json({
+      error: 'Failed to create thread',
+      success: false
+    });
+  }
+});
+
+app.post('/api/sendMessage', async (req, res) => {
+  try {
+    const { threadId, message } = req.body;
+    
+    // Get conversation info from database
+    const conversation = await db.query(
+      'SELECT assistant_type, assistant_id FROM conversations WHERE thread_id = $1',
+      [threadId]
+    );
+    
+    if (conversation.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Conversation not found',
+        success: false
+      });
+    }
+    
+    const { assistant_type, assistant_id } = conversation.rows[0];
+    
+    // Add message to thread
+    await openai.beta.threads.messages.create(threadId, {
+      role: 'user',
+      content: message,
+    });
+
+    // Run the specific assistant
+    const run = await openai.beta.threads.runs.create(threadId, {
+      assistant_id: assistant_id,
+    });
+
+    // Wait for completion and get response...
+    // (same as before)
+    
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({
+      error: 'Failed to send message',
+      success: false
+    });
+  }
+});
+```
+
+### Database Schema for Multiple Assistants
+
+```sql
+-- Updated conversations table
+CREATE TABLE conversations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    thread_id VARCHAR(255) UNIQUE NOT NULL,
+    assistant_type VARCHAR(100) NOT NULL,
+    assistant_id VARCHAR(255) NOT NULL,
+    domain VARCHAR(255),
+    user_id UUID, -- Optional: link to authenticated users
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Messages table (unchanged)
+CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Assistant configurations table (optional)
+CREATE TABLE assistant_configs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    assistant_type VARCHAR(100) UNIQUE NOT NULL,
+    assistant_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    welcome_message TEXT,
+    color VARCHAR(7), -- hex color
+    allowed_domains TEXT[], -- array of allowed domains
+    requires_auth BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert sample configurations
+INSERT INTO assistant_configs (assistant_type, assistant_id, name, welcome_message, color, allowed_domains, requires_auth) VALUES
+('customer-support', 'asst_customer_support_123', 'Customer Support', '👋 Hello! How can I help you today?', '#dc2626', ARRAY['yourcompany.com', 'support.yourcompany.com'], FALSE),
+('sales', 'asst_sales_456', 'Sales Assistant', '💼 Hi! Ready to learn about our products?', '#059669', ARRAY['yourcompany.com', 'sales.yourcompany.com'], FALSE),
+('hr-internal', 'asst_hr_789', 'HR Assistant', '🏢 Hello team member! How can I assist you?', '#7c3aed', ARRAY['internal.yourcompany.com'], TRUE),
+('technical-support', 'asst_tech_101', 'Technical Support', '🔧 Technical support here! What issue can I help resolve?', '#ea580c', ARRAY['support.yourcompany.com', 'docs.yourcompany.com'], FALSE);
+
+-- Indexes
+CREATE INDEX idx_conversations_thread_id ON conversations(thread_id);
+CREATE INDEX idx_conversations_assistant_type ON conversations(assistant_type);
+CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
+CREATE INDEX idx_assistant_configs_type ON assistant_configs(assistant_type);
+```
+
+### Frontend Implementation for Dynamic Assistant Selection
+
+Update the JavaScript in your chat widget:
+
+```javascript
+// Add to chat-widget.html
+class ChatWidget {
+    constructor() {
+        // Get assistant type from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        this.assistantType = urlParams.get('assistant') || 'customer-support';
+        this.domain = window.location.hostname;
+        
+        // ... rest of constructor
+    }
+    
+    async startNewChat() {
+        try {
+            this.isLoading = true;
+            this.updateButtonStates();
+
+            const response = await fetch(`${API_BASE_URL}/api/newThread`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assistantType: this.assistantType,
+                    domain: this.domain
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.threadId = data.threadId;
+                
+                // Apply assistant-specific configuration
+                if (data.assistantConfig) {
+                    this.applyAssistantConfig(data.assistantConfig);
+                }
+                
+                // Update welcome message
+                this.chatContainer.innerHTML = `
+                    <div class="flex justify-start message-appear">
+                        <div class="max-w-xs px-4 py-3 rounded-2xl bg-white shadow-sm border border-gray-200">
+                            <p class="text-sm text-gray-700">${data.assistantConfig.welcomeMessage}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error('Error starting new chat:', error);
+            this.addErrorMessage('Failed to start new conversation. Please try again.');
+        } finally {
+            this.isLoading = false;
+            this.updateButtonStates();
+        }
+    }
+    
+    applyAssistantConfig(config) {
+        // Update header title
+        const headerTitle = document.querySelector('.bg-red-600 h1');
+        if (headerTitle) {
+            headerTitle.textContent = config.name;
+        }
+        
+        // Update colors dynamically
+        const style = document.createElement('style');
+        style.textContent = `
+            .bg-red-600 { background-color: ${config.color} !important; }
+            .hover\\:bg-red-700:hover { background-color: ${this.darkenColor(config.color)} !important; }
+            .bg-red-700 { background-color: ${this.darkenColor(config.color)} !important; }
+            .hover\\:bg-red-800:hover { background-color: ${this.darkenColor(config.color, 0.2)} !important; }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    darkenColor(color, amount = 0.1) {
+        // Simple color darkening function
+        const hex = color.replace('#', '');
+        const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - Math.round(255 * amount));
+        const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - Math.round(255 * amount));
+        const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - Math.round(255 * amount));
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+}
+```
+
+### Embedding Examples for Different Assistants
+
+```html
+<!-- Customer Support Widget -->
+<iframe 
+    src="https://your-domain.com/chat-widget.html?assistant=customer-support" 
+    width="100%" 
+    height="100%" 
+    style="border:none; position:fixed; top:0; left:0; z-index:9999; pointer-events:none;"
+    title="Customer Support Chat">
+</iframe>
+
+<!-- Sales Assistant Widget -->
+<iframe 
+    src="https://your-domain.com/chat-widget.html?assistant=sales" 
+    width="100%" 
+    height="100%" 
+    style="border:none; position:fixed; top:0; left:0; z-index:9999; pointer-events:none;"
+    title="Sales Chat">
+</iframe>
+
+<!-- Internal HR Widget (requires authentication) -->
+<iframe 
+    src="https://internal.yourcompany.com/chat-widget.html?assistant=hr-internal" 
+    width="100%" 
+    height="100%" 
+    style="border:none; position:fixed; top:0; left:0; z-index:9999; pointer-events:none;"
+    title="HR Chat">
+</iframe>
+```
+
+### Environment Variables for Multiple Assistants
+
+```env
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Assistant IDs
+ASSISTANT_CUSTOMER_SUPPORT=asst_customer_support_123
+ASSISTANT_SALES=asst_sales_456
+ASSISTANT_HR_INTERNAL=asst_hr_789
+ASSISTANT_TECHNICAL_SUPPORT=asst_tech_101
+
+# Database
+DATABASE_URL=your-database-url-here
+
+# Security
+JWT_SECRET=your-jwt-secret-for-internal-auth
+ALLOWED_DOMAINS=yourcompany.com,support.yourcompany.com,sales.yourcompany.com
+```
+
+### Deployment Strategy
+
+1. **Single Deployment**: Deploy one chat widget that handles multiple assistants dynamically
+2. **Multiple Deployments**: Deploy separate widgets for different use cases
+3. **Hybrid Approach**: Main widget + specialized versions for specific needs
+
+Choose based on your requirements:
+- **Single**: Easier maintenance, shared codebase
+- **Multiple**: Better isolation, custom branding per assistant
+- **Hybrid**: Best of both worlds
+
 
 ## 🌐 Deployment
 
