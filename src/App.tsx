@@ -190,8 +190,7 @@ function App() {
           </div>
         </div>
 
-
-        
+         {/* Assistant Configuration */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <div className="flex items-center mb-6">
             <Globe className="w-6 h-6 text-blue-600 mr-3" />
