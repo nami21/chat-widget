@@ -136,6 +136,7 @@ function App() {
               </div>
             </div>
           </div>
+          
            {/* Live Preview */}
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="flex items-center mb-4">
