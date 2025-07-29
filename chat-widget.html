@@ -211,6 +211,11 @@
 
   <script>
     const API_BASE_URL = 'http://localhost:3000';
+    
+    // Get assistant type from URL parameter or default to customer-support
+    const urlParams = new URLSearchParams(window.location.search);
+    const ASSISTANT_TYPE = urlParams.get('assistant') || 'customer-support';
+    const domain = window.location.hostname;
 
     const chatBubble = document.getElementById('chatBubble');
     const chatWidget = document.getElementById('chatWidget');
@@ -227,6 +232,34 @@
     const closeIcon = document.getElementById('closeIcon');
 
     let threadId = null;
+
+    // Assistant configurations
+    const ASSISTANT_CONFIGS = {
+        'customer-support': {
+            name: 'Customer Support',
+            welcomeMessage: '👋 Hello! I\'m here to help with any questions or issues you have. How can I assist you today?',
+            color: '#dc2626', // red-600
+            placeholder: 'Type your message...'
+        },
+        'sales': {
+            name: 'Sales Assistant',
+            welcomeMessage: '💼 Hi there! I\'m here to help you learn about our products and find the perfect solution for your needs. What can I help you with today?',
+            color: '#059669', // green-600
+            placeholder: 'Ask about our products...'
+        },
+        'hr-internal': {
+            name: 'HR Assistant',
+            welcomeMessage: '🏢 Hello team member! I\'m here to help with HR-related questions, policies, benefits, and workplace support. How can I assist you today?',
+            color: '#7c3aed', // purple-600
+            placeholder: 'Ask about HR policies, benefits...'
+        },
+        'technical-support': {
+            name: 'Technical Support',
+            welcomeMessage: '🔧 Technical support here! I\'m ready to help you troubleshoot issues, resolve technical problems, and provide solutions. What technical issue can I help you with?',
+            color: '#ea580c', // orange-600
+            placeholder: 'Describe your technical issue...'
+        }
+    };
 
     toggleChatBtn.onclick = () => {
       const open = !chatWidget.classList.contains('hidden');
@@ -262,14 +295,32 @@
         const res = await fetch(`${API_BASE_URL}/api/newThread`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assistantType: ASSISTANT_TYPE,
+            domain: domain
+          })
         });
         const data = await res.json();
         if (data.success) {
           threadId = data.threadId;
+          
+          // Apply assistant configuration if available
+          if (data.assistantConfig) {
+            applyAssistantConfig(data.assistantConfig);
+          } else {
+            // Use local config as fallback
+            const config = ASSISTANT_CONFIGS[ASSISTANT_TYPE];
+            if (config) {
+              applyAssistantConfig(config);
+            }
+          }
+          
+          // Set welcome message
+          const config = ASSISTANT_CONFIGS[ASSISTANT_TYPE] || ASSISTANT_CONFIGS['customer-support'];
           chatContainer.innerHTML = `
             <div class="flex justify-start">
               <div class="max-w-xs px-4 py-3 rounded-2xl bg-white shadow-sm border border-gray-200">
-                <p class="text-sm text-gray-700">👋 Hello! How can I help you today?</p>
+                <p class="text-sm text-gray-700">${config.welcomeMessage}</p>
               </div>
             </div>`;
         } else {
@@ -278,6 +329,45 @@
       } catch (e) {
         addAssistantMessage('❌ Failed to start a new conversation.');
       }
+    }
+
+    function applyAssistantConfig(config) {
+      // Update header title
+      const headerTitle = document.querySelector('.bg-red-600 h1');
+      if (headerTitle && config.name) {
+        headerTitle.textContent = config.name;
+      }
+      
+      // Update input placeholder
+      if (config.placeholder) {
+        messageInput.placeholder = config.placeholder;
+      }
+      
+      // Update colors dynamically if provided
+      if (config.color) {
+        const style = document.createElement('style');
+        const darkerColor = darkenColor(config.color, 0.1);
+        const darkestColor = darkenColor(config.color, 0.2);
+        
+        style.textContent = `
+          .bg-red-600 { background-color: ${config.color} !important; }
+          .hover\\:bg-red-700:hover { background-color: ${darkerColor} !important; }
+          .bg-red-700 { background-color: ${darkerColor} !important; }
+          .hover\\:bg-red-800:hover { background-color: ${darkestColor} !important; }
+          .focus\\:ring-red-300:focus { --tw-ring-color: ${config.color}40 !important; }
+          .focus\\:border-red-500:focus { border-color: ${config.color} !important; }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+    
+    function darkenColor(color, amount = 0.1) {
+      // Simple color darkening function
+      const hex = color.replace('#', '');
+      const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - Math.round(255 * amount));
+      const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - Math.round(255 * amount));
+      const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - Math.round(255 * amount));
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     }
 
     async function sendMessage() {
