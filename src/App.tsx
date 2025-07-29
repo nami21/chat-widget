@@ -60,71 +60,7 @@ function App() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 mb-12">
-          {/* Widget Selection */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="flex items-center mb-4">
-              <Eye className="w-6 h-6 text-blue-600 mr-3" />
-              <h2 className="text-2xl font-semibold text-gray-900">Select Widget</h2>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Choose a widget to preview:
-            </p>
-            
-            <div className="space-y-3 mb-6">
-              {Object.entries(widgetConfigs).map(([key, config]) => {
-                const IconComponent = config.icon;
-                const isSelected = selectedWidget === key;
-                const colorClasses = {
-                  red: 'text-red-600 bg-red-50 border-red-200',
-                  green: 'text-green-600 bg-green-50 border-green-200', 
-                  purple: 'text-purple-600 bg-purple-50 border-purple-200',
-                  orange: 'text-orange-600 bg-orange-50 border-orange-200',
-                  blue: 'text-blue-600 bg-blue-50 border-blue-200'
-                };
-                
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedWidget(key)}
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
-                      isSelected 
-                        ? colorClasses[config.color] + ' shadow-md' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center mb-2">
-                      <IconComponent className={`w-5 h-5 mr-2 ${isSelected ? '' : 'text-gray-500'}`} />
-                      <h3 className={`font-medium ${isSelected ? '' : 'text-gray-900'}`}>
-                        {config.name}
-                      </h3>
-                    </div>
-                    <p className={`text-sm ${isSelected ? 'opacity-80' : 'text-gray-600'}`}>
-                      {config.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-            
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="font-medium text-gray-900 mb-2">External Preview</h4>
-              <a
-                href={currentWidget.path}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex items-center text-sm hover:opacity-80 ${
-                  currentWidget.color === 'red' ? 'text-red-600' :
-                  currentWidget.color === 'green' ? 'text-green-600' :
-                  currentWidget.color === 'purple' ? 'text-purple-600' :
-                  currentWidget.color === 'orange' ? 'text-orange-600' :
-                  'text-blue-600'
-                }`}
-              >
-                Open {currentWidget.name} <ExternalLink className="w-3 h-3 ml-1" />
-              </a>
-            </div>
-          </div>
+        <div className="grid lg:grid-cols-2 gap-8 mb-12">
 
           {/* Live Preview */}
           <div className="bg-white rounded-xl shadow-lg p-8">
@@ -138,9 +74,6 @@ function App() {
               }`} />
               <h2 className="text-2xl font-semibold text-gray-900">Live Preview</h2>
             </div>
-            <p className="text-gray-600 mb-6">
-              Interactive preview of {currentWidget.name}:
-            </p>
             
             <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ height: '400px' }}>
               <iframe
@@ -162,6 +95,24 @@ function App() {
                 <strong>Current:</strong> {currentWidget.name} - {currentWidget.description}
               </p>
             </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-2">External Preview</h4>
+              <a
+                href={currentWidget.path}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center text-sm hover:opacity-80 ${
+                  currentWidget.color === 'red' ? 'text-red-600' :
+                  currentWidget.color === 'green' ? 'text-green-600' :
+                  currentWidget.color === 'purple' ? 'text-purple-600' :
+                  currentWidget.color === 'orange' ? 'text-orange-600' :
+                  'text-blue-600'
+                }`}
+              >
+                Open {currentWidget.name} <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+            </div>
           </div>
 
           {/* Embedding Code */}
@@ -170,9 +121,24 @@ function App() {
               <Code className="w-6 h-6 text-red-600 mr-3" />
               <h2 className="text-2xl font-semibold text-gray-900">Embed Code</h2>
             </div>
-            <p className="text-gray-600 mb-4">
-              Copy this code to embed {currentWidget.name}:
-            </p>
+            
+            <div className="mb-6">
+              <label htmlFor="widgetSelect" className="block text-sm font-medium text-gray-700 mb-2">
+                Select Widget:
+              </label>
+              <select
+                id="widgetSelect"
+                value={selectedWidget}
+                onChange={(e) => setSelectedWidget(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                {Object.entries(widgetConfigs).map(([key, config]) => (
+                  <option key={key} value={key}>
+                    {config.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             
             <div className="space-y-4">
               <div>
