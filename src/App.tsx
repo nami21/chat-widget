@@ -33,13 +33,6 @@ function App() {
       icon: Wrench, 
       color: 'orange',
       path: '/widgets/technical-support.html'
-    },
-    'dynamic': {
-      name: 'Dynamic Widget',
-      description: 'Adapts based on URL parameters',
-      icon: Globe,
-      color: 'blue',
-      path: '/widgets/dynamic-widget.html'
     }
   };
   
