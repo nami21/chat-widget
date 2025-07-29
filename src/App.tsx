@@ -62,58 +62,7 @@ function App() {
 
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
 
-          {/* Live Preview */}
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="flex items-center mb-4">
-              <currentWidget.icon className={`w-6 h-6 mr-3 ${
-                currentWidget.color === 'red' ? 'text-red-600' :
-                currentWidget.color === 'green' ? 'text-green-600' :
-                currentWidget.color === 'purple' ? 'text-purple-600' :
-                currentWidget.color === 'orange' ? 'text-orange-600' :
-                'text-blue-600'
-              }`} />
-              <h2 className="text-2xl font-semibold text-gray-900">Live Preview</h2>
-            </div>
-            
-            <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ height: '400px' }}>
-              <iframe
-                key={selectedWidget}
-                src={currentWidget.path}
-                className="w-full h-full border-0"
-                title={`${currentWidget.name} Preview`}
-                style={{ 
-                  transform: 'scale(0.8)',
-                  transformOrigin: 'top left',
-                  width: '125%',
-                  height: '125%'
-                }}
-              />
-            </div>
-            
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600">
-                <strong>Current:</strong> {currentWidget.name} - {currentWidget.description}
-              </p>
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <h4 className="font-medium text-gray-900 mb-2">External Preview</h4>
-              <a
-                href={currentWidget.path}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex items-center text-sm hover:opacity-80 ${
-                  currentWidget.color === 'red' ? 'text-red-600' :
-                  currentWidget.color === 'green' ? 'text-green-600' :
-                  currentWidget.color === 'purple' ? 'text-purple-600' :
-                  currentWidget.color === 'orange' ? 'text-orange-600' :
-                  'text-blue-600'
-                }`}
-              >
-                Open {currentWidget.name} <ExternalLink className="w-3 h-3 ml-1" />
-              </a>
-            </div>
-          </div>
+         
 
           {/* Embedding Code */}
           <div className="bg-white rounded-xl shadow-lg p-8">
@@ -187,8 +136,62 @@ function App() {
               </div>
             </div>
           </div>
+           {/* Live Preview */}
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="flex items-center mb-4">
+              <currentWidget.icon className={`w-6 h-6 mr-3 ${
+                currentWidget.color === 'red' ? 'text-red-600' :
+                currentWidget.color === 'green' ? 'text-green-600' :
+                currentWidget.color === 'purple' ? 'text-purple-600' :
+                currentWidget.color === 'orange' ? 'text-orange-600' :
+                'text-blue-600'
+              }`} />
+              <h2 className="text-2xl font-semibold text-gray-900">Live Preview</h2>
+            </div>
+            
+            <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ height: '400px' }}>
+              <iframe
+                key={selectedWidget}
+                src={currentWidget.path}
+                className="w-full h-full border-0"
+                title={`${currentWidget.name} Preview`}
+                style={{ 
+                  transform: 'scale(0.8)',
+                  transformOrigin: 'top left',
+                  width: '125%',
+                  height: '125%'
+                }}
+              />
+            </div>
+            
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-600">
+                <strong>Current:</strong> {currentWidget.name} - {currentWidget.description}
+              </p>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-2">External Preview</h4>
+              <a
+                href={currentWidget.path}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center text-sm hover:opacity-80 ${
+                  currentWidget.color === 'red' ? 'text-red-600' :
+                  currentWidget.color === 'green' ? 'text-green-600' :
+                  currentWidget.color === 'purple' ? 'text-purple-600' :
+                  currentWidget.color === 'orange' ? 'text-orange-600' :
+                  'text-blue-600'
+                }`}
+              >
+                Open {currentWidget.name} <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+            </div>
+          </div>
         </div>
 
+
+        
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <div className="flex items-center mb-6">
             <Globe className="w-6 h-6 text-blue-600 mr-3" />
