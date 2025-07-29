@@ -886,3 +886,27 @@ For issues and questions:
 2. Review the browser console for errors
 3. Verify your backend API endpoints are working
 4. Check that your OpenAI Assistant is properly configured
+
+
+## Embedding Options
+
+## Direct Embed:
+
+What it is: This method embeds a specific, pre-configured chat widget HTML file (e.g., customer-support.html, sales-assistant.html) directly into a designated area on your webpage.
+How it works: You specify the src attribute of the iframe to point to one of the HTML files located in the widgets/ directory (e.g., /widgets/customer-support.html). The width and height are set to fixed values, making it suitable for a specific container on your page.
+Use case: Ideal when you want a dedicated chat widget for a particular purpose on a specific page, and that purpose doesn't change. For example, a "Customer Support" chat on your help page, or a "Sales" chat on your pricing page.
+
+## Dynamic Version:
+What it is: This method uses a single, generic chat-widget.html file and dynamically loads the desired assistant configuration based on a URL parameter.
+How it works: The src attribute of the iframe points to chat-widget.html, and an ?assistant= query parameter is appended to specify which assistant configuration should be loaded (e.g., /chat-widget.html?assistant=customer-support). The width and height are typically fixed, similar to the Direct Embed.
+Use case: Best when you want to use the same iframe code across different pages or contexts, but have the chat widget adapt its behavior and appearance (e.g., welcome message, color, assistant ID) based on the page or user. This reduces the number of distinct HTML files you need to manage.
+
+## Full Page Overlay:
+What it is: This method creates a chat widget that appears as a floating bubble (usually in the corner of the screen) and, when clicked, expands into a full-page or large overlay, covering the content behind it.
+How it works: The iframe is styled with position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;. Crucially, pointer-events: none; is applied to the iframe itself, and pointer-events: auto; is applied to the chat widget elements inside the iframe. This allows clicks to pass through the iframe to the underlying page until the chat bubble (which has pointer-events: auto;) is interacted with.
+Use case: This is the most common way to implement a persistent chat support bubble on a website, similar to how many popular chat services operate. It provides an always-available chat option without obstructing the main content until the user chooses to engage with it.
+In summary:
+
+Direct Embed: Specific widget, specific HTML file, fixed size.
+Dynamic Version: Generic widget, single HTML file, URL parameter for configuration, fixed size.
+Full Page Overlay: Floating bubble, expands to full screen, uses pointer-events for interaction control.
