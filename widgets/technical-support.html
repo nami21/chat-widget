@@ -1,329 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technical Support Chat</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Internal Support</title>
+  <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom scrollbar styling for webkit browsers */
-        .chat-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .chat-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 3px;
-        }
-        .chat-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-        .chat-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        
-        /* Message animation */
-        .message-appear {
-            animation: messageSlideIn 0.3s ease-out;
-        }
-        
-        @keyframes messageSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.5;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.04);
+      }
+    }
 
-        /* Chat widget animations */
-        .chat-widget-enter {
-            animation: chatWidgetSlideUp 0.3s ease-out;
-        }
-        
-        @keyframes chatWidgetSlideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
+    .loading-bubble {
+      animation: pulse 1s infinite ease-in-out;
+      background-color: rgba(255, 255, 255, 0.7);
+      color: #6B7280;
+      font-style: italic;
+      border: 1px solid #E5E7EB; /* light gray border */
+      border-radius: 1rem;
+      padding: 0.75rem 1rem;
+    }
 
-        /* Loading dots animation */
-        .typing-indicator {
-            display: inline-block;
-        }
-        
-        .typing-indicator span {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: #6b7280;
-            margin: 0 1px;
-            animation: typing 1.4s infinite ease-in-out;
-        }
-        
-        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
-        }
+    #chatWidget {
+      transform: translateY(30px);
+      opacity: 0;
+      transition:
+        transform 0.35s ease-out,
+        opacity 0.35s ease-out,
+        box-shadow 0.2s ease;
+      will-change: transform, opacity;
+    }
 
-        /* Modal animations */
-        .modal-content {
-            animation: modalSlideUp 0.3s ease-out;
-        }
-        
-        @keyframes modalSlideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    #chatWidget.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
 </head>
-<body class="m-0 p-0 bg-transparent">
-    <div class="w-full h-full min-h-screen relative">
-        <!-- Chat Bubble -->
-        <div id="chatBubble" class="absolute bottom-6 right-6 z-50">
-            <button 
-                id="toggleChatBtn"
-                class="bg-orange-600 hover:bg-orange-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-4 focus:ring-orange-300 pointer-events-auto"
-                aria-label="Toggle technical support chat">
-                <svg id="messageIcon" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                </svg>
-                <svg id="closeIcon" class="h-6 w-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
+<body class="bg-transparent text-gray-900">
 
-        <!-- Chat Widget -->
-        <div id="chatWidget" class="absolute bottom-24 right-6 z-40 hidden">
-            <div class="w-80 h-96 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto">
-                <!-- Confirmation Modal -->
-                <div id="confirmationModal" class="absolute bottom-0 left-0 right-0 z-10 hidden">
-                    <div class="bg-white border-t border-gray-200 p-4 rounded-b-2xl shadow-lg modal-content">
-                        <h3 class="text-sm font-medium text-gray-900 mb-3 text-center">Start New Conversation?</h3>
-                        <div class="flex space-x-3 justify-center">
-                            <button 
-                                id="confirmNewChatBtn" 
-                                class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-300">
-                                Yes
-                            </button>
-                            <button 
-                                id="cancelNewChatBtn" 
-                                class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
+  <!-- Toggle Button -->
+  <div id="chatToggle" class="fixed bottom-6 right-6 z-50">
+    <button aria-label="Toggle Chat"
+      class="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+        <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+      </svg>
+    </button>
+  </div>
 
-                <!-- Header -->
-                <div class="bg-orange-600 text-white px-4 py-3 rounded-t-2xl flex justify-between items-center">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        <h1 class="text-lg font-semibold">Technical Support</h1>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <button id="newChatIconBtn" class="w-8 h-8 bg-orange-700 hover:bg-orange-800 rounded-full flex items-center justify-center focus:outline-none">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                        </button>
-                        <button id="closeChatBtn" class="w-8 h-8 bg-orange-700 hover:bg-orange-800 rounded-full flex items-center justify-center focus:outline-none">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+  <!-- Chat Widget -->
+  <div id="chatWidget" class="fixed bottom-24 right-6 w-80 max-w-full h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-40 hidden">
 
-                <!-- Chat Messages Area -->
-                <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 chat-scrollbar">
-                    <div class="flex justify-start">
-                        <div class="max-w-xs px-4 py-3 rounded-2xl bg-white shadow-sm border border-gray-200">
-                            <p class="text-sm text-gray-700">🔧 Technical support here! I'm ready to help you troubleshoot issues, resolve technical problems, and provide solutions. What technical issue can I help you with?</p>
-                        </div>
-                    </div>
-                </div>
+    <div id="modalBackdrop" class="absolute inset-0 bg-black bg-opacity-30 hidden z-30 rounded-2xl"></div>
 
-                <!-- Input Area -->
-                <div class="border-t border-gray-200 p-4 bg-white rounded-b-2xl">
-                    <div class="flex space-x-3 items-center">
-                        <input
-                            id="messageInput"
-                            type="text"
-                            placeholder="Describe your technical issue..."
-                            class="flex-1 px-4 py-3 border border-gray-300 rounded-full text-sm bg-gray-50 focus:outline-none focus:border-orange-500"
-                        />
-                        <button
-                            id="sendBtn"
-                            class="w-10 h-10 bg-orange-600 hover:bg-orange-700 text-white rounded-full flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path d="M22 2L11 13" />
-                                <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Header -->
+    <div class="bg-red-600 text-white px-4 py-3 rounded-t-2xl flex justify-between items-center">
+      <h2 class="font-semibold text-sm">AI Assistant</h2>
+      <div class="flex gap-2">
+        <button id="resetBtn" class="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-200 hover:scale-105">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+            <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+        <button id="closeBtn" class="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-200 hover:scale-105">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+            <path d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
-    <script>
-        const API_BASE_URL = 'http://localhost:3000';
-        const ASSISTANT_TYPE = 'technical-support';
+    <!-- Messages -->
+    <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 text-sm">
+      <div class="flex justify-start">
+        <div class="bg-red-50 border border-red-400 text-red-800 px-4 py-3 rounded-2xl shadow max-w-xs">
+          👋 Hello! How can I assist you today?
+        </div>
+      </div>
+    </div>
 
-        const chatBubble = document.getElementById('chatBubble');
-        const chatWidget = document.getElementById('chatWidget');
-        const chatContainer = document.getElementById('chatContainer');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const toggleChatBtn = document.getElementById('toggleChatBtn');
-        const closeChatBtn = document.getElementById('closeChatBtn');
-        const newChatIconBtn = document.getElementById('newChatIconBtn');
-        const confirmationModal = document.getElementById('confirmationModal');
-        const confirmNewChatBtn = document.getElementById('confirmNewChatBtn');
-        const cancelNewChatBtn = document.getElementById('cancelNewChatBtn');
-        const messageIcon = document.getElementById('messageIcon');
-        const closeIcon = document.getElementById('closeIcon');
+    <!-- Input -->
+    <div class="border-t border-gray-200 p-4 bg-white rounded-b-2xl relative">
+      <div class="flex items-center gap-2">
+        <input id="messageInput" type="text" placeholder="Type your message here..." maxlength="500"
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-red-500"/>
+        <button id="sendBtn"
+          class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full text-sm transition-transform transform hover:scale-105 disabled:opacity-50">
+          Send
+        </button>
+      </div>
 
-        let threadId = null;
+      <!-- Confirmation Modal -->
+      <div id="confirmationModal" class="absolute bottom-0 left-0 right-0 z-40 hidden">
+        <div id="modalContent"
+             class="transform translate-y-full opacity-0 transition-all duration-300 ease-out
+                    bg-white border-t border-gray-200 p-4 rounded-b-2xl shadow-lg">
+          <h3 class="text-sm font-medium text-gray-900 mb-3 text-center">Start New Conversation?</h3>
+          <div class="flex space-x-3 justify-center">
+            <button id="confirmNewChatBtn"
+              class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-red-300">
+              Confirm
+            </button>
+            <button id="cancelNewChatBtn"
+              class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        toggleChatBtn.onclick = () => {
-            const open = !chatWidget.classList.contains('hidden');
-            chatWidget.classList.toggle('hidden');
-            messageIcon.classList.toggle('hidden');
-            closeIcon.classList.toggle('hidden');
-            if (!open) messageInput.focus();
-        };
+  <!-- Script -->
+  <script>
+    const API_BASE = 'http://localhost:3000/api';
+    const ASSISTANT_TYPE = 'helpdesk-support';
+    let threadId = null;
 
-        closeChatBtn.onclick = () => toggleChatBtn.click();
+    const widget = document.getElementById('chatWidget');
+    const toggle = document.getElementById('chatToggle');
+    const closeBtn = document.getElementById('closeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const messagesDiv = document.getElementById('messages');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const modal = document.getElementById('confirmationModal');
+    const modalContent = document.getElementById('modalContent');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const confirmNewChatBtn = document.getElementById('confirmNewChatBtn');
+    const cancelNewChatBtn = document.getElementById('cancelNewChatBtn');
 
-        newChatIconBtn.onclick = () => {
-            confirmationModal.classList.remove('hidden');
-        };
+    toggle.addEventListener('click', () => {
+      widget.classList.remove('hidden');
+      setTimeout(() => widget.classList.add('show'), 10);
+    });
 
-        confirmNewChatBtn.onclick = () => {
-            confirmationModal.classList.add('hidden');
-            startNewChat();
-        };
+    closeBtn.addEventListener('click', () => {
+      widget.classList.remove('show');
+      setTimeout(() => widget.classList.add('hidden'), 300);
+    });
 
-        cancelNewChatBtn.onclick = () => {
-            confirmationModal.classList.add('hidden');
-        };
+    resetBtn.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      modalBackdrop.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        modalContent.classList.remove('translate-y-full', 'opacity-0');
+        modalContent.classList.add('translate-y-0', 'opacity-100');
+      });
+    });
 
-        sendBtn.onclick = () => sendMessage();
+    confirmNewChatBtn.addEventListener('click', () => {
+      messagesDiv.innerHTML = '';
+      appendMessage('assistant', "👋 Hello! How can I assist you today?");
+      initThread();
+      closeModal();
+    });
 
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
+    cancelNewChatBtn.addEventListener('click', closeModal);
+
+    function closeModal() {
+      modalContent.classList.remove('translate-y-0', 'opacity-100');
+      modalContent.classList.add('translate-y-full', 'opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modalBackdrop.classList.add('hidden');
+      }, 300);
+    }
+
+    async function initThread() {
+      const res = await fetch(`${API_BASE}/newThread`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assistantType: ASSISTANT_TYPE })
+      });
+      const json = await res.json();
+      threadId = json.threadId;
+    }
+
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+      if (!message || !threadId) return;
+
+      appendMessage('user', message);
+      messageInput.value = '';
+      sendBtn.disabled = true;
+      appendMessage('loading', '...');
+
+      try {
+        const res = await fetch(`${API_BASE}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ threadId, message, assistantType: ASSISTANT_TYPE })
         });
-
-        async function startNewChat() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/newThread`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        assistantType: ASSISTANT_TYPE,
-                        domain: window.location.hostname
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    threadId = data.threadId;
-                    chatContainer.innerHTML = `
-                        <div class="flex justify-start">
-                            <div class="max-w-xs px-4 py-3 rounded-2xl bg-white shadow-sm border border-gray-200">
-                                <p class="text-sm text-gray-700">🔧 Technical support here! I'm ready to help you troubleshoot issues, resolve technical problems, and provide solutions. What technical issue can I help you with?</p>
-                            </div>
-                        </div>`;
-                } else {
-                    throw new Error();
-                }
-            } catch (e) {
-                addAssistantMessage('❌ Failed to start a new conversation.');
-            }
+        const json = await res.json();
+        removeLoading();
+        if (json.success) {
+          appendMessage('assistant', json.response);
+        } else {
+          appendMessage('error', 'Error: ' + (json.error || 'Unknown'));
         }
+      } catch {
+        removeLoading();
+        appendMessage('error', '⚠️ Network error');
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
 
-        async function sendMessage() {
-            const message = messageInput.value.trim();
-            if (!message || !threadId) return;
+    function appendMessage(role, text) {
+      const container = document.createElement('div');
+      container.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
 
-            addUserMessage(message);
-            messageInput.value = '';
+      const bubble = document.createElement('div');
+      bubble.className = `max-w-xs px-4 py-3 rounded-2xl shadow text-sm whitespace-pre-wrap transition-transform duration-200 transform hover:scale-105 ${
+        role === 'user' ? 'bg-red-600 text-white' :
+        role === 'assistant' ? 'bg-red-50 border border-red-400 text-red-800' :
+        role === 'loading' ? 'loading-bubble' :
+        'bg-yellow-100 text-yellow-800'
+      }`;
 
-            const typing = addTypingIndicator();
+      bubble.textContent = text;
+      container.appendChild(bubble);
+      messagesDiv.appendChild(container);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
 
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ threadId, message }),
-                });
-                const data = await res.json();
-                typing.remove();
-                if (data.success) addAssistantMessage(data.response);
-                else throw new Error();
-            } catch (e) {
-                typing.remove();
-                addAssistantMessage('❌ Failed to get response.');
-            }
-        }
+    function removeLoading() {
+      const loaders = [...messagesDiv.querySelectorAll('.loading-bubble')];
+      loaders.forEach(loader => loader.parentElement.remove());
+    }
 
-        function addUserMessage(text) {
-            const div = document.createElement('div');
-            div.className = 'flex justify-end';
-            div.innerHTML = `<div class="max-w-xs px-4 py-3 rounded-2xl bg-orange-600 text-white shadow-sm"><p class="text-sm">${escapeHtml(text)}</p></div>`;
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') sendMessage();
+    });
 
-        function addAssistantMessage(text) {
-            const div = document.createElement('div');
-            div.className = 'flex justify-start';
-            div.innerHTML = `<div class="max-w-xs px-4 py-3 rounded-2xl bg-white shadow-sm border border-gray-200"><p class="text-sm text-gray-700">${escapeHtml(text)}</p></div>`;
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function addTypingIndicator() {
-            const div = document.createElement('div');
-            div.className = 'flex justify-start';
-            div.innerHTML = `<div class="max-w-xs px-4 py-3 rounded-2xl bg-white shadow-sm border border-gray-200"><p class="text-sm text-gray-400 italic">Typing...</p></div>`;
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return div;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            startNewChat();
-        });
-    </script>
+    initThread();
+  </script>
 </body>
 </html>
